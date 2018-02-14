@@ -37,10 +37,10 @@ def goalCallback(data):
     goal = [data.x, data.y]
 
 #####################
-##### END CALLBACK FUNCTIONS   
+##### END CALLBACK FUNCTIONS
 #####################
 
-##################### 
+#####################
 # BEGIN HELPER FUNCTIONS [YOU CAN USE THESE IN YOUR CODE, BUT YOU SHOULDN'T NEED TO MODIFY]
 #####################
 
@@ -54,7 +54,7 @@ def wrap_angle(angle):
     #This function will take any angle and wrap it into the range [-pi, pi]
     while angle >= math.pi:
         angle = angle - 2*math.pi
-        
+
     while angle <= -math.pi:
         angle = angle + 2*math.pi
     return angle
@@ -64,24 +64,46 @@ def wrap_angle(angle):
 #####################
 
 #####################
+##### TREY'S HELPERS
+####################
+
+def compute_vector(robot, goal_position):
+    # computes the direction of the vector towards the goal
+    diff_x = goal_position[0] - robot[0]
+    diff_y = goal_position[1] - robot[1]
+    angle = math.atan2(diff_y, diff_x)
+    direction = wrap_angle(angle - robot[2])
+    magnitude = math.hypot(diff_x, diff_y)
+
+    # print "old_yaw: ", robot[2], " direction: ", direction, "magnitude: ", magnitude
+    x = magnitude*math.cos(direction) # x component of vector
+    y = magnitude*math.sin(direction)  # y component of vector
+    # print "x: ", x, " y: ", y
+    return [x, y]  # have to convert to X,Y representation
+
+#####################
+##### END TREY'S HELPERS
+####################
+
+#####################
 # BEGIN MODIFIABLE LAB CODE [ALTHOUGH MOST MODIFICATIONS SHOULD BE WHERE SPECIFIED]
 #####################
 
 #This function takes in a force [x,y] (in robot coordinates) and returns the drive command (Twist) that should be sent to the robot motors
 def drive_from_force(force):
-    
+
     #####################################################
     #PARAMETERS : MODIFY TO GET ROBOT TO MOVE EFFECTIVELY
-    
-    #This is multiplied by the angle of the drive force to get the turn command 
-    turn_multiplier = 1.0
-    
+
+    #This is multiplied by the angle of the drive force to get the turn command
+    turn_multiplier = 2.0
+
     #If the absolute value of the angle of the force direction is greater than this, we only spin
     spin_threshold = math.pi
-    
+
     #This is multiplied by the magnitude of the force vector to get the drive forward command
-    drive_multiplier = 1.0 
-    
+    drive_multiplier = 0.75
+
     #END OF PARAMETERS
     #####################################################
 
@@ -101,10 +123,10 @@ def drive_from_force(force):
 
     return twist
 
-# This function determines and returns the attractive force (force_to_goal) to the goal.  
+# This function determines and returns the attractive force (force_to_goal) to the goal.
 # This force should be in robot coordinates
 def goal_force( ):
-        
+
     #This is the robot's actual global location, set in robot_callback
     global robot #format [x_position, y_position, yaw]
 
@@ -112,39 +134,41 @@ def goal_force( ):
 
     #####################################################
     #PARAMETERS : MODIFY TO GET ROBOT TO MOVE EFFECTIVELY
-    
+
     #Parameter : MODIFY
     #This should be used to scale the magnitude of the attractive goal force
-    strength = 1.0 
-    
+    strength = 1.0
+
     #END OF PARAMETERS
     #####################################################
-    
-    force_to_goal = [0,0]    
-    
+
+    force_to_goal = [0,0]
+
     #########################
     # LAB 2 PART A : BEGIN
     #########################
 
-    # PART A CODE HERE: 
+    # PART A CODE HERE:
     #    1. Compute goal force vector and put it in the 'force_to_goal' variable
+
+    force_to_goal= compute_vector(robot, goal)
 
     #########################
     # LAB 2 PART A : END
     #########################
-    
+
     return force_to_goal
 
 
 #This function looks at the current laser reading, then computes and returns the obstacle avoidance force vector (in local robot coordinates)
-def obstacle_force():  
+def obstacle_force():
 
-    #The most recent laser_scan.  It has the following fields 
+    #The most recent laser_scan.  It has the following fields
     #   laser_scan.angle_min : angle of the first distance reading
     #   laser_scan.angle_increment : the angular difference between consecutive distance readings
     #   laser_scan.ranges : an array all of the distance readings
     global laser_scan
-    
+
     #Only run if we have a laser scan to work with
     if laser_scan is None:
         return [0,0]
@@ -153,7 +177,7 @@ def obstacle_force():
     #This will accumulate all of the obstacle forces acting upon us
     force_from_obstacles = [0,0]
 
-    cur_angle = laser_scan.angle_min 
+    cur_angle = laser_scan.angle_min
     #cur_angle will always have the relative angle between the robot's yaw and the current laser reading
 
     for i in range(len(laser_scan.ranges)):
@@ -161,12 +185,12 @@ def obstacle_force():
         # Get the magnitude of the repulsive force for this distance reading
         # CHANGE WHICH FUNCTION IS CALLED FOR LAB 2 PART C
         strength = get_pf_magnitude_constant(laser_scan.ranges[i])
-    
+
         #########################
         # LAB 2 PART B : BEGIN
         #########################
 
-        # PART B CODE HERE: 
+        # PART B CODE HERE:
         #    1. Compute force vector with magnitude 'strength' away from obstacle
         #    2. Add this force vector to the 'force_from_obstacles' vector
 
@@ -184,21 +208,21 @@ def get_pf_magnitude_linear(distance):
 
     #####################################################
     #PARAMETERS: MODIFY TO GET THINGS WORKING EFFECTIVELY
-        
+
     #How close to the obstacle do we have to be to begin feeling repulsive force
-    distance_threshold = 1.0 
+    distance_threshold = 1.0
 
     #The maximum strength of the repulsive force
     max_strength = 1.0
 
     #END OF PARAMETERS
     #####################################################
-    
+
     #########################
     # LAB 2 PART C : BEGIN
     #########################
 
-    # PART C CODE HERE: 
+    # PART C CODE HERE:
     #   1. Compute the magnitude of the force for the given distance and return it
 
     #########################
@@ -213,9 +237,9 @@ def get_pf_magnitude_constant(distance):
 
     #####################################################
     #PARAMETERS: MODIFY TO GET THINGS WORKING EFFECTIVELY
-        
+
     #How close to the obstacle do we have to be to begin feeling repulsive force
-    distance_threshold = 1.0 
+    distance_threshold = 1.0
 
     #Strength of the repulsive force
     strength = 1.0
@@ -237,10 +261,10 @@ def potential():
     rospy.Subscriber("base_pose_ground_truth", Odometry, robot_callback) #Subscribe to the robot pose topic
     rospy.Subscriber("next_waypoint", Point, goalCallback)#Subscribe to the goal location topic
 
-    rate = rospy.Rate(10) #10 Hz    
-    
+    rate = rospy.Rate(10) #10 Hz
+
     while not rospy.is_shutdown():
-        
+
         #Don't do anything until the goal location has been received
         if goal is None:
             rate.sleep()
@@ -248,21 +272,21 @@ def potential():
 
         #1. Compute attractive force to goal
         g_force = goal_force()
-        
+
         #2. Compute obstacle avoidance force
         o_force = obstacle_force()
 
         #3. Get total force by adding together
         total_force = add_forces(g_force, o_force)
-        
-        #4. Get final drive command from total force
-        twist = drive_from_force(total_force) 
 
-        #5. Publish drive command, then sleep 
+        #4. Get final drive command from total force
+        twist = drive_from_force(total_force)
+
+        #5. Publish drive command, then sleep
         pub.publish(twist)
-        
+
         rate.sleep() #sleep until the next time to publish
-        
+
 
     #Send empty twist command to make sure robot stops
     twist = Twist()
