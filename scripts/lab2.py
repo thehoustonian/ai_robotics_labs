@@ -67,19 +67,33 @@ def wrap_angle(angle):
 ##### TREY'S HELPERS
 ####################
 
+def mag_to_xy(vector):
+    # vector = [magnitude, direction]
+    # converts a vector represented by magnitude and direction and returns an [x, y] force
+    x = vector[0]*math.cos(vector[1])
+    y = vector[0]*math.sin(vector[1])
+    return [x, y]
+
+def xy_to_mag(vector):
+    # vector = [x, y]
+    # converts a vector from [x,y] representation to [mag, dir] representation
+    magnitude = math.atan2(vector[1], vector[0])
+    direction = math.hypot(vector[0], vector[1])
+    return [magnitude, direction] # [magnitude, direction]
+
 def compute_vector(robot, goal_position):
-    # computes the direction of the vector towards the goal
+    # computes the direction of the vector towards the goal (GLOBAL)
     diff_x = goal_position[0] - robot[0]
     diff_y = goal_position[1] - robot[1]
     angle = math.atan2(diff_y, diff_x)
+
+    # have to do this to convert between global and local (ROBOT-CENTRIC) coordinates
     direction = wrap_angle(angle - robot[2])
     magnitude = math.hypot(diff_x, diff_y)
 
-    # print "old_yaw: ", robot[2], " direction: ", direction, "magnitude: ", magnitude
-    x = magnitude*math.cos(direction) # x component of vector
-    y = magnitude*math.sin(direction)  # y component of vector
-    # print "x: ", x, " y: ", y
-    return [x, y]  # have to convert to X,Y representation
+    # print "diff_x: ", diff_x, " diff_y: ", diff_y, " direction: ", direction, " magnitude: ", magnitude, " mag_to_xy: ", mag_to_xy([magnitude, direction])
+
+    return mag_to_xy([magnitude, direction])
 
 #####################
 ##### END TREY'S HELPERS
@@ -96,10 +110,10 @@ def drive_from_force(force):
     #PARAMETERS : MODIFY TO GET ROBOT TO MOVE EFFECTIVELY
 
     #This is multiplied by the angle of the drive force to get the turn command
-    turn_multiplier = 2.0
+    turn_multiplier = 0.65
 
     #If the absolute value of the angle of the force direction is greater than this, we only spin
-    spin_threshold = math.pi
+    spin_threshold = math.pi/2
 
     #This is multiplied by the magnitude of the force vector to get the drive forward command
     drive_multiplier = 0.75
@@ -137,7 +151,7 @@ def goal_force( ):
 
     #Parameter : MODIFY
     #This should be used to scale the magnitude of the attractive goal force
-    strength = 1.0
+    strength = 0.75
 
     #END OF PARAMETERS
     #####################################################
@@ -151,7 +165,7 @@ def goal_force( ):
     # PART A CODE HERE:
     #    1. Compute goal force vector and put it in the 'force_to_goal' variable
 
-    force_to_goal= compute_vector(robot, goal)
+    force_to_goal= compute_vector(robot, goal) # robot-centric
 
     #########################
     # LAB 2 PART A : END
@@ -193,6 +207,10 @@ def obstacle_force():
         # PART B CODE HERE:
         #    1. Compute force vector with magnitude 'strength' away from obstacle
         #    2. Add this force vector to the 'force_from_obstacles' vector
+
+        obstacle_vector = mag_to_xy([-strength, cur_angle])
+        force_from_obstacles[0] += obstacle_vector[0]
+        force_from_obstacles[1] += obstacle_vector[1]
 
         #########################
         # LAB 2 PART B : END
@@ -276,6 +294,7 @@ def potential():
         #2. Compute obstacle avoidance force
         o_force = obstacle_force()
 
+        print " o_force: ", o_force
         #3. Get total force by adding together
         total_force = add_forces(g_force, o_force)
 
