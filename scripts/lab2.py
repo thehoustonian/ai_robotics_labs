@@ -110,7 +110,7 @@ def drive_from_force(force):
     #PARAMETERS : MODIFY TO GET ROBOT TO MOVE EFFECTIVELY
 
     #This is multiplied by the angle of the drive force to get the turn command
-    turn_multiplier = 0.65
+    turn_multiplier = 0.90
 
     #If the absolute value of the angle of the force direction is greater than this, we only spin
     spin_threshold = math.pi/2
@@ -198,7 +198,7 @@ def obstacle_force():
 
         # Get the magnitude of the repulsive force for this distance reading
         # CHANGE WHICH FUNCTION IS CALLED FOR LAB 2 PART C
-        strength = get_pf_magnitude_constant(laser_scan.ranges[i])
+        strength = get_pf_magnitude_linear(laser_scan.ranges[i])
 
         #########################
         # LAB 2 PART B : BEGIN
@@ -228,10 +228,10 @@ def get_pf_magnitude_linear(distance):
     #PARAMETERS: MODIFY TO GET THINGS WORKING EFFECTIVELY
 
     #How close to the obstacle do we have to be to begin feeling repulsive force
-    distance_threshold = 1.0
+    distance_threshold = 0.7
 
     #The maximum strength of the repulsive force
-    max_strength = 1.0
+    max_strength = 0.75
 
     #END OF PARAMETERS
     #####################################################
@@ -243,11 +243,16 @@ def get_pf_magnitude_linear(distance):
     # PART C CODE HERE:
     #   1. Compute the magnitude of the force for the given distance and return it
 
+    if distance <= distance_threshold:
+        strength = ((distance_threshold - distance) / distance_threshold) * max_strength
+    else:
+        strength = 0
+
     #########################
     # LAB 2 PART C : END
     #########################
 
-    return 0 #CHANGE TO RETURN THE VALUE YOU COMPUTE
+    return strength #CHANGE TO RETURN THE VALUE YOU COMPUTE
 
 # This function returns the magnitude of repulsive force for the input distance
 # using a constant value if the obstacles is closer than a threshold
@@ -294,7 +299,7 @@ def potential():
         #2. Compute obstacle avoidance force
         o_force = obstacle_force()
 
-        print " o_force: ", o_force
+        # print "g_force: ", g_force, " o_force: ", o_force
         #3. Get total force by adding together
         total_force = add_forces(g_force, o_force)
 
