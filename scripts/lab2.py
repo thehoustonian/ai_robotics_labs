@@ -213,7 +213,7 @@ def obstacle_force():
         #    2. Add this force vector to the 'force_from_obstacles' vector
 
         obstacle_vector = mag_to_xy([-strength, cur_angle])
-        # tan_vector = mag_to_xy([-tan_strength, cur_angle + math.pi/2])
+        tan_vector = mag_to_xy([-tan_strength, cur_angle + math.pi/2])
         force_from_obstacles[0] += obstacle_vector[0] + tan_vector[0]
         force_from_obstacles[1] += obstacle_vector[1] + tan_vector[1]
 
