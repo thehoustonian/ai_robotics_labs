@@ -95,6 +95,7 @@ def compute_vector(robot, goal_position):
 
     return mag_to_xy([magnitude, direction])
 
+
 #####################
 ##### END TREY'S HELPERS
 ####################
@@ -198,7 +199,10 @@ def obstacle_force():
 
         # Get the magnitude of the repulsive force for this distance reading
         # CHANGE WHICH FUNCTION IS CALLED FOR LAB 2 PART C
-        strength = get_pf_magnitude_linear(laser_scan.ranges[i])
+        strength = get_pf_magnitude_linear(laser_scan.ranges[i]) * 3
+
+        # For extra credit part 2
+        tan_strength = get_pf_magnitude_constant(laser_scan.ranges[i]) * 2
 
         #########################
         # LAB 2 PART B : BEGIN
@@ -209,8 +213,9 @@ def obstacle_force():
         #    2. Add this force vector to the 'force_from_obstacles' vector
 
         obstacle_vector = mag_to_xy([-strength, cur_angle])
-        force_from_obstacles[0] += obstacle_vector[0]
-        force_from_obstacles[1] += obstacle_vector[1]
+        # tan_vector = mag_to_xy([-tan_strength, cur_angle + math.pi/2])
+        force_from_obstacles[0] += obstacle_vector[0] + tan_vector[0]
+        force_from_obstacles[1] += obstacle_vector[1] + tan_vector[1]
 
         #########################
         # LAB 2 PART B : END
@@ -228,7 +233,7 @@ def get_pf_magnitude_linear(distance):
     #PARAMETERS: MODIFY TO GET THINGS WORKING EFFECTIVELY
 
     #How close to the obstacle do we have to be to begin feeling repulsive force
-    distance_threshold = 0.7
+    distance_threshold = 0.8
 
     #The maximum strength of the repulsive force
     max_strength = 0.75
@@ -262,7 +267,7 @@ def get_pf_magnitude_constant(distance):
     #PARAMETERS: MODIFY TO GET THINGS WORKING EFFECTIVELY
 
     #How close to the obstacle do we have to be to begin feeling repulsive force
-    distance_threshold = 1.0
+    distance_threshold = 0.85
 
     #Strength of the repulsive force
     strength = 1.0
@@ -274,6 +279,12 @@ def get_pf_magnitude_constant(distance):
         return strength
 
     return 0
+
+# This function returns the magnitude of repulsive force for the input distance
+# using an exponential decay function.
+def get_pf_magnitude_exponential(distance):
+    strength = 1.0
+    return strength
 
 # This is the main loop of the lab code.  It runs continuously, navigating our robot
 # (hopefully) towards the goal, without hitting any obstacles
