@@ -93,7 +93,7 @@ def compute_vector(robot, goal_position):
 
     # print "diff_x: ", diff_x, " diff_y: ", diff_y, " direction: ", direction, " magnitude: ", magnitude, " mag_to_xy: ", mag_to_xy([magnitude, direction])
 
-    return mag_to_xy([magnitude, direction])
+    return [magnitude, direction]
 
 
 #####################
@@ -114,7 +114,7 @@ def drive_from_force(force):
     turn_multiplier = 0.90
 
     #If the absolute value of the angle of the force direction is greater than this, we only spin
-    spin_threshold = math.pi/2
+    spin_threshold = math.pi/3
 
     #This is multiplied by the magnitude of the force vector to get the drive forward command
     drive_multiplier = 0.75
@@ -165,8 +165,8 @@ def goal_force( ):
 
     # PART A CODE HERE:
     #    1. Compute goal force vector and put it in the 'force_to_goal' variable
-
-    force_to_goal= compute_vector(robot, goal) # robot-centric
+    force_mag = compute_vector(robot, goal)
+    force_to_goal= mag_to_xy([force_mag[0]*strength + 1, force_mag[1]]) # robot-centric
 
     #########################
     # LAB 2 PART A : END
@@ -199,10 +199,18 @@ def obstacle_force():
 
         # Get the magnitude of the repulsive force for this distance reading
         # CHANGE WHICH FUNCTION IS CALLED FOR LAB 2 PART C
-        strength = get_pf_magnitude_linear(laser_scan.ranges[i]) * 3
 
         # For extra credit part 2
+        """
+        strength = get_pf_magnitude_linear(laser_scan.ranges[i]) * 3
         tan_strength = get_pf_magnitude_constant(laser_scan.ranges[i]) * 2
+        """
+
+        # normal:
+        # strength = get_pf_magnitude_linear(laser_scan.ranges[i])
+
+        # exponential:
+        strength = get_pf_magnitude_exponential(laser_scan.ranges[i])
 
         #########################
         # LAB 2 PART B : BEGIN
@@ -212,10 +220,17 @@ def obstacle_force():
         #    1. Compute force vector with magnitude 'strength' away from obstacle
         #    2. Add this force vector to the 'force_from_obstacles' vector
 
+        # for extra credit pt 2:
+        """
         obstacle_vector = mag_to_xy([-strength, cur_angle])
         tan_vector = mag_to_xy([-tan_strength, cur_angle + math.pi/2])
         force_from_obstacles[0] += obstacle_vector[0] + tan_vector[0]
         force_from_obstacles[1] += obstacle_vector[1] + tan_vector[1]
+        """
+        # normal:
+        obstacle_vector = mag_to_xy([-strength, cur_angle])
+        force_from_obstacles[0] += obstacle_vector[0]
+        force_from_obstacles[1] += obstacle_vector[1]
 
         #########################
         # LAB 2 PART B : END
@@ -283,7 +298,9 @@ def get_pf_magnitude_constant(distance):
 # This function returns the magnitude of repulsive force for the input distance
 # using an exponential decay function.
 def get_pf_magnitude_exponential(distance):
-    strength = 1.0
+    distance_mult = 9  # used to scale the exponential force so it's not as strong far away
+    distance *= distance_mult
+    strength = 1/(distance * distance)
     return strength
 
 # This is the main loop of the lab code.  It runs continuously, navigating our robot
@@ -310,7 +327,7 @@ def potential():
         #2. Compute obstacle avoidance force
         o_force = obstacle_force()
 
-        # print "g_force: ", g_force, " o_force: ", o_force
+        print "g_force: ", g_force, " o_force: ", o_force
         #3. Get total force by adding together
         total_force = add_forces(g_force, o_force)
 
