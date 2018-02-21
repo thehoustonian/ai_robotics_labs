@@ -77,8 +77,8 @@ def mag_to_xy(vector):
 def xy_to_mag(vector):
     # vector = [x, y]
     # converts a vector from [x,y] representation to [mag, dir] representation
-    magnitude = math.atan2(vector[1], vector[0])
-    direction = math.hypot(vector[0], vector[1])
+    direction = math.atan2(vector[1], vector[0])
+    magnitude = math.hypot(vector[0], vector[1])
     return [magnitude, direction] # [magnitude, direction]
 
 def compute_vector(robot, goal_position):
@@ -115,6 +115,7 @@ def drive_from_force(force):
 
     #If the absolute value of the angle of the force direction is greater than this, we only spin
     spin_threshold = math.pi/3
+    # spin_threshold = math.pi/10  # extra credit pt 4
 
     #This is multiplied by the magnitude of the force vector to get the drive forward command
     drive_multiplier = 0.75
@@ -152,6 +153,7 @@ def goal_force( ):
 
     #Parameter : MODIFY
     #This should be used to scale the magnitude of the attractive goal force
+    # strength = 1.0  # extra credit pt 4
     strength = 0.75
 
     #END OF PARAMETERS
@@ -167,6 +169,9 @@ def goal_force( ):
     #    1. Compute goal force vector and put it in the 'force_to_goal' variable
     force_mag = compute_vector(robot, goal)
     force_to_goal= mag_to_xy([force_mag[0]*strength + 1, force_mag[1]]) # robot-centric
+
+    # for extra credit pt 4:
+    # force_to_goal = mag_to_xy([8, force_mag[1]])
 
     #########################
     # LAB 2 PART A : END
@@ -200,7 +205,7 @@ def obstacle_force():
         # Get the magnitude of the repulsive force for this distance reading
         # CHANGE WHICH FUNCTION IS CALLED FOR LAB 2 PART C
 
-        # For extra credit part 2
+        # For extra credit part 2 tangent + linear repulsion:
         """
         strength = get_pf_magnitude_linear(laser_scan.ranges[i]) * 3
         tan_strength = get_pf_magnitude_constant(laser_scan.ranges[i]) * 2
@@ -228,10 +233,19 @@ def obstacle_force():
         force_from_obstacles[1] += obstacle_vector[1] + tan_vector[1]
         """
         # normal:
+
         obstacle_vector = mag_to_xy([-strength, cur_angle])
         force_from_obstacles[0] += obstacle_vector[0]
         force_from_obstacles[1] += obstacle_vector[1]
 
+        # extra credit pt 4:
+        """
+        direction = cur_angle + math.pi/2
+
+        obstacle_vector = mag_to_xy([strength, direction])
+        force_from_obstacles[0] += obstacle_vector[0]
+        force_from_obstacles[1] += obstacle_vector[1]
+        """
         #########################
         # LAB 2 PART B : END
         #########################
@@ -299,6 +313,7 @@ def get_pf_magnitude_constant(distance):
 # using an exponential decay function.
 def get_pf_magnitude_exponential(distance):
     distance_mult = 9  # used to scale the exponential force so it's not as strong far away
+    # distance_mult = 4  # extra credit pt 4
     distance *= distance_mult
     strength = 1/(distance * distance)
     return strength
