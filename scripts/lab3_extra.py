@@ -55,6 +55,80 @@ def laserCallback(laser_data):
 ##### END CALLBACK FUNCTION
 ############################
 
+def drive_from_force(force):
+
+    #####################################################
+    #PARAMETERS : MODIFY TO GET ROBOT TO MOVE EFFECTIVELY
+
+    #This is multiplied by the angle of the drive force to get the turn command
+    turn_multiplier = 1
+
+    #If the absolute value of the angle of the force direction is greater than this, we only spin
+    spin_threshold = math.pi/3
+    # spin_threshold = math.pi/10  # extra credit pt 4
+
+    #This is multiplied by the magnitude of the force vector to get the drive forward command
+    drive_multiplier = 0.75
+
+    #END OF PARAMETERS
+    #####################################################
+
+    #The twist command to fill out and return
+    twist = Twist()
+
+    #Determine the angle and magnitude of the force
+    force_angle = wrap_angle(math.atan2(force[1],force[0]))
+    force_mag = math.hypot(force[0],force[1])
+
+    #Get turn speed
+    twist.angular.z = turn_multiplier * force_angle
+
+    #Do we just spin?  Only drive forward (twist.linear.x) if angle is small
+    if abs(force_angle) < spin_threshold:
+        twist.linear.x = drive_multiplier * force_mag
+
+    return twist
+
+def get_pf_magnitude_linear(distance):
+    max_strength = 5
+    strength = distance * max_strength
+
+    return strength #CHANGE TO RETURN THE VALUE YOU COMPUTE
+
+def get_pf_magnitude_exponential(distance):
+    distance_mult = 2
+    distance *= distance_mult
+    return 1/(distance * distance)
+
+def get_pf_magnitude_constant(distance):
+    max_strength = 1.0
+
+    return max_strength
+
+def add_forces(force1, force2):
+    assert len(force1) == len(force2), "Force vectors differ in length"
+    return [force1[0] + force2[0], force1[1] + force2[1]]  # x, y
+
+def wrap_angle(angle):
+    while angle >= math.pi:
+        angle = angle - 2*math.pi
+
+    while angle <= -math.pi:
+        angle += 2*math.pi
+
+    return angle
+
+def xy_to_mag(force_xy):
+    mag = math.hypot(force_xy[0], force_xy[1])
+    angle = math.atan2(force_xy[1], force_xy[0])
+    return [mag, angle]
+
+def mag_to_xy(force_mag):
+    force_x = math.cos(force_mag[1]) * force_mag[0]
+    force_y = math.sin(force_mag[1]) * force_mag[0]
+    return [force_x, force_y]
+
+
 def wall_force(wall_distance):
     if wall_distance == -1:
         return mag_to_xy([0, math.pi])
@@ -86,12 +160,7 @@ if __name__ == '__main__':
     # PART C CODE HERE:
     #  Define and initialize variables that
     #  you need inside the main loop
-
-    wander_angle = random.randint(-5, 5)
-    turn_count = 0
-    state = 0
-    prev_wall_dist = -1
-
+    wall_found = False
 
     #######################################
     # LAB 3 VARIABLE DECLARATION CODE : END
@@ -103,42 +172,30 @@ if __name__ == '__main__':
         # LAB 3 INNER LOOP CODE : BEGIN
         ###############################
 
-        twist = Twist()
-
         # PART C CODE HERE:
         # Make sure that twist gets set with your drive command
-        if front_distance == -1 and state == 0:
-            # nothing found, so WANDER
-            if turn_count < 10:
-                twist.angular.z = wander_angle
-                turn_count += 1
-            else:
-                twist.angular.z = 0
 
-            twist.linear.x = 1
+        # print "wall_distance: ", wall_distance, " front_distance: ", front_distance
 
-        elif front_distance != -1:
-            # At an obstacle, so TURN LEFT
-            state = 1
-            turn_count = 0
-            twist.angular.z = math.pi/3
-            twist.linear.x = 0.2
+        wall_vector = wall_force(wall_distance)
 
-        elif (wall_distance > 0.5 or wall_distance == -1):  # turn towards wall
-            # We've been following a wall, but it's gone now, so TURN RIGHT
-            state = 2
-            twist.angular.z = -math.pi/2
-            twist.linear.x = 0.5
+        obstacle_vector = obstacle_force(front_distance)
 
-        elif front_distance == -1 and wall_distance != -1:
-            # Found a wall, so FOLLOW WALL
-            state = 3
-            twist.angular.z = -math.pi/12
-            twist.linear.x = 1
+        total_force = add_forces(wall_vector, obstacle_vector)
 
-        prev_wall_dist = wall_distance
-        print "State: ", state, " wall_distance: %.2f" % wall_distance, " front_distance: %.2f" % front_distance
+        if total_force != [0, 0]:
+            wall_found = True
+        else:
+            wall_found = False
 
+        if not wall_found:
+            total_force = [1, 0]
+
+        print "obstacle_vector: [%.2f, %.2f]" % (obstacle_vector[0], obstacle_vector[1]), \
+        "wall_vector: [%.2f, %.2f]" % (wall_vector[0], wall_vector[1]), \
+        "total_force: %.2f, %.2f" % (total_force[0], total_force[1])
+
+        twist = drive_from_force(total_force)
 
         #############################
         # LAB 3 INNER LOOP CODE : END
