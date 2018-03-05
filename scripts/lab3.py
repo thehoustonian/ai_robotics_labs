@@ -90,9 +90,9 @@ if __name__ == '__main__':
     wander_angle = random.randint(-5, 5)
     turn_count = 0
     state = 0
-    prev_wall_dist = -1
 
-    front_turn_threshold = 0.53  # How close, really, do we have to be to an obstacle to turn?
+    front_turn_threshold = 0.7  # How close, really, do we have to be to an obstacle to turn?
+    wall_dist_threshold = 0.48  # how close should we follow the wall?
 
 
     #######################################
@@ -109,6 +109,11 @@ if __name__ == '__main__':
 
         # PART C CODE HERE:
         # Make sure that twist gets set with your drive command
+        wall_detected = True if (wall_distance != -1) else False
+        obstacle_detected = True if (front_distance != -1) else False
+
+        wall_near  = True if (wall_distance != -1  and wall_distance <= wall_dist_threshold) else False
+        obstacle_near = True if (front_distance != -1 and front_distance <= front_turn_threshold) else False
 
         if state == 0:  # WANDER
             twist.linear.x = 1
@@ -118,8 +123,10 @@ if __name__ == '__main__':
             else:
                 twist.angular.z = 0
 
-            if front_distance != -1:
+            if obstacle_detected:
                 state = 1
+            elif (not obstacle_detected) and wall_detected:
+                state = 2
             else:
                 state = 0
 
@@ -127,36 +134,33 @@ if __name__ == '__main__':
             turn_count = 0
             twist.angular.z = math.pi/3
             twist.linear.x = 0.1
-            if front_distance == -1 and wall_distance == -1:
-                state = 0
-            elif front_distance == -1 and wall_distance > 0.5:
+            if wall_detected and not wall_near and not obstacle_near:
                 state = 2
-            elif front_distance == -1 and wall_distance <= 0.5:
+            elif wall_near and not obstacle_near:
                 state = 3
-            elif front_distance != -1:
+            else:
                 state = 1
 
         elif state == 2:  # TURN TO WALL
             twist.angular.z = -math.pi/3
             twist.linear.x = 0.25
-            if front_distance != -1 and front_distance <= front_turn_threshold:
+            if obstacle_near:
                 state = 1
-            elif wall_distance <= 0.5 and wall_distance != -1:
+            elif wall_near and not obstacle_near:
                 state = 3
-            elif wall_distance > 0.5 and wall_distance != -1:
+            else:
                 state = 2
-            #elif wall_distance == -1 and front_distance == -1:
-            #    state = 0
 
         elif state == 3:  # FOLLOW WALL
-            twist.angular.z = -math.pi/16 # slight curve toward wall to correct drift
+            # twist.angular.z = -math.pi/16 # slight curve toward wall to correct drift
+            twist.angular.z = 0
             twist.linear.x = 1
 
-            if (wall_distance > 0.5 or wall_distance == -1) and front_distance == -1:
+            if not wall_near and not obstacle_near:
                 state = 2
-            elif front_distance != -1 and front_distance <= front_turn_threshold:
+            elif obstacle_near:
                 state = 1
-            elif (front_distance == -1 or front_distance > front_turn_threshold) and wall_distance <= 0.5:
+            else:
                 state = 3
 
         print "State: ", state, " wall_distance: %.2f" % wall_distance, " front_distance: %.2f" % front_distance
