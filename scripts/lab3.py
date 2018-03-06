@@ -91,7 +91,7 @@ if __name__ == '__main__':
     turn_count = 0
     state = 0
 
-    front_turn_threshold = 0.7  # How close, really, do we have to be to an obstacle to turn?
+    front_turn_threshold = 0.8  # How close, really, do we have to be to an obstacle to turn?
     wall_dist_threshold = 0.48  # how close should we follow the wall?
 
 
