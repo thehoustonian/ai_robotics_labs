@@ -71,7 +71,7 @@ def obstacle_force(front_distance):
 if __name__ == '__main__':
     rospy.init_node('lab3', anonymous=True) #Initialize the ros node
     pub = rospy.Publisher('cmd_vel', Twist) #Create our publisher to send drive commands to the robot
-    rospy.Subscriber("base_scan", LaserScan, laserCallback) #Subscribe to the laser scan topic
+    rospy.Subscriber("base_scan_0", LaserScan, laserCallback) #Subscribe to the laser scan topic (base_scan for Lab 3, base for L4)
 
     rate = rospy.Rate(10) #10 Hz
 
@@ -163,7 +163,7 @@ if __name__ == '__main__':
             else:
                 state = 3
 
-        print "State: ", state, " wall_distance: %.2f" % wall_distance, " front_distance: %.2f" % front_distance
+        # print "State: ", state, " wall_distance: %.2f" % wall_distance, " front_distance: %.2f" % front_distance
 
 
         #############################

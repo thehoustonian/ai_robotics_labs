@@ -52,7 +52,7 @@ def robotCallback(data):
     robot = [data.pose.pose.position.x,data.pose.pose.position.y,yaw]
 
 ############################
-##### END CALLBACK FUNCTIONS  
+##### END CALLBACK FUNCTIONS
 ############################
 
 ##########################
@@ -74,7 +74,9 @@ class Particle:
 #Initialize the global list of particles with n random particles
 def initialize_particles(n):
     global particles
-    
+    for i in range(0, n):
+        particles.append(get_random_particle())
+
     ##### TODO
     #TASK 1: INITIALIZE n PARTICLES TO A RANDOM LOCATION ON THE BOARD
     # particles is a list of particles (initially empty) it should be appended to
@@ -82,7 +84,7 @@ def initialize_particles(n):
     # particle at a random location on the map
 
 
-    
+
 #This will create and return a random valid particle (on the map, not on an obstacle)
 def get_random_particle():
     global discrete_map
@@ -106,9 +108,9 @@ def get_random_particle():
         #Check this particle in a valid location?
         if particle_on_map(p):
             valid = True
-    
+
     #Found a valid particle, return it
-    # Weight is initialized to -1.0 so that we know this is random 
+    # Weight is initialized to -1.0 so that we know this is random
     # This is used to distinguish random particles and resampled particles for the display
     p = Particle(px,py,ptheta,-1.0)
     return p
@@ -138,15 +140,15 @@ def advance_particles():
     for i in range(len(particles)):
         #Collect this particle's pose to pass into the motion model
         start_pose = [particles[i].x, particles[i].y, particles[i].theta]
-        
+
         #Sample motion model to get new pose
         new_x, new_y, new_theta = sample_motion_model_velocity(u, start_pose, vp)
-        
+
         #Assign this new pose to the particle
         particles[i].x = new_x
         particles[i].y = new_y
         particles[i].theta = new_theta
-                       
+
 #Check to see if a particle is on the map
 def particle_on_map(p):
     global discrete_map
@@ -160,7 +162,7 @@ def particle_on_map(p):
     (gx,gy) = discrete_map.map_to_grid((p.x,p.y))
     if (gx,gy) in discrete_map.occupied:
         return False
-    
+
     return True
 
 #Assign each particle its weight
@@ -189,56 +191,90 @@ def get_scan_prob(p):
     #        p.x, p.y, p.theta
     #    The first three are the pose for this particle
     # TIP: To get the expected distance, call distance_LUT.distance(x,y,angle), where x,y is the location to start from, and angle is the map angle direction to travel.  This will return the distance from the look-up-table (LUT) that we expect an obstacle to be.
-    # TIP: To use the sensor model, simply call sensor_model(expected_distance, measured_distance, maximum_range, std) 
+    # TIP: To use the sensor model, simply call sensor_model(expected_distance, measured_distance, maximum_range, std)
     # where expected distance is the distance to the expected obstacle, measured_distance is the distance that the laser measured
     # (stored in laser_data.ranges[]), and maximum_range is the maximum range reading of the laser scanner (stored in laser_data.range_max)
     # and std is the standard deviation to use for the reading noise
-    sensor_model_std = 2.5 #You can modify this if it helps and use it when you call the sensor_model
-
+    sensor_model_std = 1.5 #You can modify this if it helps and use it when you call the sensor_model
+    probability = 1.0
     #This variable will have the angle from the robot that the current scan is pointing
     #TIP: To get global angle to pass to LUT from this, do wrap_angle(current_angle + p.theta), where p.theta is the heading of the current particle
-    current_angle = laser_data.angle_min    
+    current_angle = laser_data.angle_min
 
     for i in range(len(laser_data.ranges)):
         #IN THIS LOOP, PROCESS THE INDIVIDUAL LASER SCANS, USING THE SENSOR MODEL
+        expected_distance = distance_LUT.distance(p.x, p.y, wrap_angle(current_angle + p.theta))
+        sensor_model_prob = sensor_model(expected_distance, laser_data.ranges[i], laser_data.range_max, sensor_model_std)
+        probability *= sensor_model_prob
+
         current_angle = current_angle + laser_data.angle_increment
 
-
-
-    #RETURN THE TOTAL SCAN PROBABILITY 
-    return 0.0 #CHANGE THIS LINE
+    #RETURN THE TOTAL SCAN PROBABILITY
+    return probability #CHANGE THIS LINE
 
 #Get the next set of particles
 #By resampling current ones according to weights, with replacement
 def resample_particles():
     global particles
- 
+
+    new_particles = []
+    total_weight = 0
+    random_particle_count = 100
+    if(random_particle_count > len(particles)):
+        print "Too many random particles!! Reducing to 1/2 total particle count"
+        random_particle_count = len(particles) // 2
+
     #### TODO
     # TASK 3: RESAMPLE PARTICLES
     #
     # 1. Resample from old particles
-    #  Using the weights of the particles, resample a new set of particles, 
-    #  Each time you choose one from the old set (particles), create a new one and add it to the 
-    #  new_particles list (make sure you create a new one with the same values, not just a reference 
+    #  Using the weights of the particles, resample a new set of particles,
+    #  Each time you choose one from the old set (particles), create a new one and add it to the
+    #  new_particles list (make sure you create a new one with the same values, not just a reference
     #  to the old one) .  The weight for each of these new particles should be 0.0
     # 2. Add in Random Particles
     #  Make sure that you also add in some number of random particles at each iteration (you can play with how many)
     #  Look at the initialize particles code to see how to get a random particles easily
-    #  The weight for each of these particles should be -1.0  (this helps us tell them apart from the 
+    #  The weight for each of these particles should be -1.0  (this helps us tell them apart from the
     #  resampled particles in the display code)
-    # 
+    #
     # 3. For the assignment the new set of particles should be the same size
     # (Some extra credit parts may require changing this)
     # Make sure that when this function exits the "particles" list is pointing to the list
     #  of the new particles
-   
 
-# Get a single pose estimate from our particle filter.  This 
+    # compute the total weight
+    for particle in particles:
+        total_weight += particle.w
+    # print total_weight
+
+    # Resample particles based on weight
+    for i in range(0, len(particles) - random_particle_count):
+        rand_weight = random.uniform(0, total_weight)
+        inc_weight = 0
+        particle_index = 0
+
+        while inc_weight < rand_weight:
+            inc_weight += particles[particle_index].w
+            particle_index += 1
+        if particle_index != 0:
+            particle_index -= 1
+        new_particles.append(Particle(particles[particle_index].x, particles[particle_index].y, particles[particle_index].theta, 0.0))
+
+    # Add in random particles
+    for i in range(0, random_particle_count):
+        new_particles.append(get_random_particle())
+
+    particles = new_particles
+
+    # print "Particle number: " + str(len(particles))
+
+# Get a single pose estimate from our particle filter.  This
 # should be the "current best guess" according to current beliefs
 # It will be displayed on the output images in black
 def get_pose_estimate():
-
     ##### TODO
+    global particles
     # TASK 4. Get a pose estimate from our beliefs
     # This code should look at all of the particles and return a single pose that
     # is the "best guess" of where the robot is right now, if we had to choose one place
@@ -246,8 +282,12 @@ def get_pose_estimate():
     #   TIP: You can tell the difference between resampled particles and random particles by their
     #   weight.  Random particles have weight -1.0, while resampled particles have weight 0.0
     #   You probably shouldn't use the random particles to influence your pose estimate
+    # est_particle = Particle(0, 0, 0, 0)
+    i = random.randrange(0, len(particles))
+    est_particle = particles[i]
 
-    return 0.0, 0.0, 0.0  #format is x, y, theta
+    print est_particle.x, est_particle.y, est_particle.w
+    return [est_particle.x, est_particle.y, est_particle.theta]  #format is x, y, theta
 
 #Update all the particles, done once per iteration
 def update_particles(iteration, saveFigs):
@@ -256,7 +296,7 @@ def update_particles(iteration, saveFigs):
     advance_particles()
 
     if saveFigs:
-        sname = discrete_map.world_dir + '/' + 'pf_' + discrete_map.world_name + '_' + str(iteration).zfill(4) + '_after_motion.png'
+        sname = discrete_map.world_dir + '/images/' + 'pf_' + discrete_map.world_name + '_' + str(iteration).zfill(4) + '_after_motion.png'
         discrete_map.display_particles(particles, robot, laser_data, get_pose_estimate(), sname)
 
     # 2. Sensor Update: Get weights from sensor model
@@ -266,7 +306,7 @@ def update_particles(iteration, saveFigs):
     resample_particles()
 
     if saveFigs:
-        sname = discrete_map.world_dir + '/' + 'pf_' + discrete_map.world_name + '_' + str(iteration).zfill(4) + '_after_resample.png'
+        sname = discrete_map.world_dir + '/images/' + 'pf_' + discrete_map.world_name + '_' + str(iteration).zfill(4) + '_after_resample.png'
         discrete_map.display_particles(particles, robot, laser_data, get_pose_estimate(), sname)
 
 
@@ -274,7 +314,7 @@ def update_particles(iteration, saveFigs):
 if __name__ == '__main__':
 
     #Initialize the ros node
-    rospy.init_node('lab4pf', anonymous=True) 
+    rospy.init_node('lab4pf', anonymous=True)
 
     #Subscribe to the topics we need
     rospy.Subscriber("base_pose_ground_truth", Odometry, robotCallback) #Subscribe to the robot pose topic
@@ -292,12 +332,12 @@ if __name__ == '__main__':
     args = rospy.myargv(argv=sys.argv)
 
     #This creates the discretized map that is used to calculate expected sensor readings
-    #  Resolution is the second argument, (initially 5)  
+    #  Resolution is the second argument, (initially 5)
     #  Feel free to change if you need to, but then the LUT for the new resolution will have
     #  to be regenerated, and this can take 30-40 minutes depending on resolution
     #  LUT for resolution 5 and the maps we use for the lab are included in the assignment
-    discrete_map = DiscreteMap(args[1], 5) 
-    
+    discrete_map = DiscreteMap(args[1], 5)
+
     # create the distance look-up-table (LUT) to use to get expected sensor readings
     distance_LUT = DistanceLUT(discrete_map)
 
@@ -307,7 +347,7 @@ if __name__ == '__main__':
     #Initialize particles
     #We will start with 500 particles, but you can experiment with different numbers of particles
     #The more the merrier, but your computer has to be able to handle it
-    initialize_particles(500)
+    initialize_particles(650)
 
     #Set iteration counter
     iteration = 1
@@ -319,20 +359,20 @@ if __name__ == '__main__':
 
     #Display initial distribution of particles, if we have any
     if len(particles) > 0:
-        sname = discrete_map.world_dir + '/' + 'pf_' + discrete_map.world_name + '_0_Initial.png'
+        sname = discrete_map.world_dir + '/images/' + 'pf_' + discrete_map.world_name + '_0_Initial.png'
         discrete_map.display_particles(particles, robot, laser_data, get_pose_estimate(), sname)
 
     #Main filtering loop
     while not rospy.is_shutdown():
 
         #Only proceed if we have received a laser scan
-        if got_laser: 
+        if got_laser:
 
             #Store time to keep track of how long this iteration takes
             before = rospy.get_rostime()
-            
+
             #Should we save out images on this iteration?
-            saveFigs = False
+            saveFigs = True
             if (iteration % display_rate) == 0 and len(particles) > 0:
                 saveFigs = True
 
@@ -344,7 +384,7 @@ if __name__ == '__main__':
 
             #Increment our iteration counter
             iteration = iteration + 1
-            
+
             #Figure our how long iteration took, keep track of stats
             #This gives us our delta_t for prediction step
             #Probably don't modify this
@@ -353,4 +393,3 @@ if __name__ == '__main__':
             cur_delta_t = duration.to_sec()
             delta_t_sum = delta_t_sum + cur_delta_t
             delta_t = delta_t_sum / float(iteration)
-
