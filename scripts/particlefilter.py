@@ -8,6 +8,7 @@ from nav_msgs.msg import *
 from tf.transformations import euler_from_quaternion
 import math
 import random
+import copy
 from labutils import *
 from sensormodel import *
 from motionmodel import *
@@ -195,7 +196,7 @@ def get_scan_prob(p):
     # where expected distance is the distance to the expected obstacle, measured_distance is the distance that the laser measured
     # (stored in laser_data.ranges[]), and maximum_range is the maximum range reading of the laser scanner (stored in laser_data.range_max)
     # and std is the standard deviation to use for the reading noise
-    sensor_model_std = 1.5 #You can modify this if it helps and use it when you call the sensor_model
+    sensor_model_std = 2.5 #You can modify this if it helps and use it when you call the sensor_model
     probability = 1.0
     #This variable will have the angle from the robot that the current scan is pointing
     #TIP: To get global angle to pass to LUT from this, do wrap_angle(current_angle + p.theta), where p.theta is the heading of the current particle
@@ -219,7 +220,7 @@ def resample_particles():
 
     new_particles = []
     total_weight = 0
-    random_particle_count = 100
+    random_particle_count = 250
     if(random_particle_count > len(particles)):
         print "Too many random particles!! Reducing to 1/2 total particle count"
         random_particle_count = len(particles) // 2
@@ -257,15 +258,17 @@ def resample_particles():
         while inc_weight < rand_weight:
             inc_weight += particles[particle_index].w
             particle_index += 1
+
         if particle_index != 0:
             particle_index -= 1
+
         new_particles.append(Particle(particles[particle_index].x, particles[particle_index].y, particles[particle_index].theta, 0.0))
 
     # Add in random particles
     for i in range(0, random_particle_count):
         new_particles.append(get_random_particle())
 
-    particles = new_particles
+    particles = copy.deepcopy(new_particles)
 
     # print "Particle number: " + str(len(particles))
 
@@ -282,12 +285,28 @@ def get_pose_estimate():
     #   TIP: You can tell the difference between resampled particles and random particles by their
     #   weight.  Random particles have weight -1.0, while resampled particles have weight 0.0
     #   You probably shouldn't use the random particles to influence your pose estimate
-    # est_particle = Particle(0, 0, 0, 0)
-    i = random.randrange(0, len(particles))
-    est_particle = particles[i]
+    est_particle = Particle(0, 0, 0, -1.0)
+    x_avg = 0
+    y_avg = 0
+    theta_avg = 0
+    count = 0
 
-    print est_particle.x, est_particle.y, est_particle.w
-    return [est_particle.x, est_particle.y, est_particle.theta]  #format is x, y, theta
+    for particle in particles:
+        if particle.w == -1:
+            continue
+        x_avg += particle.x
+        y_avg += particle.y
+        theta_avg += particle.theta
+        count += 1
+
+    if count != 0:
+        x_avg /= count
+        y_avg /= count
+        theta_avg /= count * 3.14
+
+
+    # print est_particle.x, est_particle.y, est_particle.w
+    return [x_avg, y_avg, theta_avg]  #format is x, y, theta
 
 #Update all the particles, done once per iteration
 def update_particles(iteration, saveFigs):
@@ -347,7 +366,7 @@ if __name__ == '__main__':
     #Initialize particles
     #We will start with 500 particles, but you can experiment with different numbers of particles
     #The more the merrier, but your computer has to be able to handle it
-    initialize_particles(650)
+    initialize_particles(700)
 
     #Set iteration counter
     iteration = 1
@@ -355,7 +374,7 @@ if __name__ == '__main__':
     #This controls how frequently we save images of the particles to the world folder
     #Change this to influence how many images get saved out
     #1 is useful for debugging, but saves a lot of images
-    display_rate = 1
+    display_rate = 2
 
     #Display initial distribution of particles, if we have any
     if len(particles) > 0:
