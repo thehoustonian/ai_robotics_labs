@@ -135,7 +135,7 @@ def advance_particles():
     #       4: Influence of |linear velocity| on final angle noise
     #       5: Influence of |angular velocity| on final angle noise
     #       6: Delta T to be used
-    vp = [0.1,0.1,0.1,0.1,0.1,0.1,delta_t]
+    vp = [0.1,0.1,0.15,0.15,0.1,0.1,delta_t]
 
     #Advance each particle
     for i in range(len(particles)):
@@ -220,7 +220,7 @@ def resample_particles():
 
     new_particles = []
     total_weight = 0
-    random_particle_count = 250
+    random_particle_count = 150
     if(random_particle_count > len(particles)):
         print "Too many random particles!! Reducing to 1/2 total particle count"
         random_particle_count = len(particles) // 2
