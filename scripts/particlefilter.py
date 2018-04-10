@@ -2,6 +2,9 @@
 #Author: Chris Archibald, for AI-Robotics Class
 #Last Modified: March 29, 2018
 import rospy
+import numpy as np
+from sklearn.cluster import MiniBatchKMeans, KMeans
+from sklearn.metrics.pairwise import pairwise_distances_argmin_min
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
 from nav_msgs.msg import *
@@ -135,7 +138,7 @@ def advance_particles():
     #       4: Influence of |linear velocity| on final angle noise
     #       5: Influence of |angular velocity| on final angle noise
     #       6: Delta T to be used
-    vp = [0.1,0.1,0.15,0.15,0.1,0.1,delta_t]
+    vp = [0.12,0.12,0.15,0.15,0.1,0.1,delta_t]
 
     #Advance each particle
     for i in range(len(particles)):
@@ -220,7 +223,7 @@ def resample_particles():
 
     new_particles = []
     total_weight = 0
-    random_particle_count = 150
+    random_particle_count = (int)(0.19 * len(particles)) # percentage randomness of total particle count
     if(random_particle_count > len(particles)):
         print "Too many random particles!! Reducing to 1/2 total particle count"
         random_particle_count = len(particles) // 2
@@ -285,6 +288,7 @@ def get_pose_estimate():
     #   TIP: You can tell the difference between resampled particles and random particles by their
     #   weight.  Random particles have weight -1.0, while resampled particles have weight 0.0
     #   You probably shouldn't use the random particles to influence your pose estimate
+    '''
     est_particle = Particle(0, 0, 0, -1.0)
     x_avg = 0
     y_avg = 0
@@ -307,6 +311,66 @@ def get_pose_estimate():
 
     # print est_particle.x, est_particle.y, est_particle.w
     return [x_avg, y_avg, theta_avg]  #format is x, y, theta
+    '''
+    '''
+    row_averages = []
+    cell_size = 0.3 # resolution
+
+    map_width = 15
+    map_height = 15
+
+    max_x = map_width / 2.0
+    max_y = map_height / 2.0
+    r_ind = 0
+    c_ind = 0
+
+    occ_grid_width = (int) (map_width / cell_size)
+    occ_grid_height = (int) (map_height / cell_size)
+
+    print occ_grid_width, occ_grid_height
+
+    # make sure the grid is big enough so we don't have an index error
+    grid = [0 for num in range(0, occ_grid_width * occ_grid_height)]
+
+    # fill in the occupancy grid
+    for particle in particles:
+        if particle.w == -1:
+            continue
+        else:
+            adj_x = map_width - (particle.x + max_x)
+            adj_y = map_height - (particle.y + max_y)
+
+            r_ind = occ_grid_height - (adj_y // cell_size);
+            c_ind = occ_grid_width - (adj_x // cell_size);
+
+            try:
+                grid[(int)(r_ind * occ_grid_width + c_ind)] += 1
+            except:
+                print r_ind * occ_grid_width + c_ind
+
+    print max(grid)
+    '''
+    k_means = KMeans(n_clusters=4)
+    coord_array = []
+    guess = [0, 0, 0]
+    for particle in particles:
+        if particle.w == -1:
+            continue
+        else:
+            coord_array.append([particle.x, particle.y, particle.theta])
+
+    if len(coord_array) != 0:
+        numpy_array = np.array(coord_array)
+        k_means.fit(numpy_array)
+        point_closest, _ = pairwise_distances_argmin_min(k_means.cluster_centers_, numpy_array)
+        cluster_labels = k_means.labels_
+        labels, counts = np.unique(cluster_labels[cluster_labels>=0], return_counts=True)
+        #guess = k_means.cluster_centers_[labels[np.argsort(-counts)[:3]][0]]
+        guess = numpy_array[point_closest[labels[np.argsort(-counts)[:3]][0]]]
+        
+
+    return guess[0], guess[1], guess[2]
+
 
 #Update all the particles, done once per iteration
 def update_particles(iteration, saveFigs):
@@ -366,7 +430,7 @@ if __name__ == '__main__':
     #Initialize particles
     #We will start with 500 particles, but you can experiment with different numbers of particles
     #The more the merrier, but your computer has to be able to handle it
-    initialize_particles(700)
+    initialize_particles(900)
 
     #Set iteration counter
     iteration = 1
