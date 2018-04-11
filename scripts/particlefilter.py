@@ -138,7 +138,7 @@ def advance_particles():
     #       4: Influence of |linear velocity| on final angle noise
     #       5: Influence of |angular velocity| on final angle noise
     #       6: Delta T to be used
-    vp = [0.12,0.12,0.15,0.15,0.1,0.1,delta_t]
+    vp = [0.11,0.11,0.2,0.15,0.1,0.1,delta_t]
 
     #Advance each particle
     for i in range(len(particles)):
@@ -199,7 +199,7 @@ def get_scan_prob(p):
     # where expected distance is the distance to the expected obstacle, measured_distance is the distance that the laser measured
     # (stored in laser_data.ranges[]), and maximum_range is the maximum range reading of the laser scanner (stored in laser_data.range_max)
     # and std is the standard deviation to use for the reading noise
-    sensor_model_std = 2.5 #You can modify this if it helps and use it when you call the sensor_model
+    sensor_model_std = 2.25 #You can modify this if it helps and use it when you call the sensor_model
     probability = 1.0
     #This variable will have the angle from the robot that the current scan is pointing
     #TIP: To get global angle to pass to LUT from this, do wrap_angle(current_angle + p.theta), where p.theta is the heading of the current particle
@@ -288,68 +288,7 @@ def get_pose_estimate():
     #   TIP: You can tell the difference between resampled particles and random particles by their
     #   weight.  Random particles have weight -1.0, while resampled particles have weight 0.0
     #   You probably shouldn't use the random particles to influence your pose estimate
-    '''
-    est_particle = Particle(0, 0, 0, -1.0)
-    x_avg = 0
-    y_avg = 0
-    theta_avg = 0
-    count = 0
 
-    for particle in particles:
-        if particle.w == -1:
-            continue
-        x_avg += particle.x
-        y_avg += particle.y
-        theta_avg += particle.theta
-        count += 1
-
-    if count != 0:
-        x_avg /= count
-        y_avg /= count
-        theta_avg /= count * 3.14
-
-
-    # print est_particle.x, est_particle.y, est_particle.w
-    return [x_avg, y_avg, theta_avg]  #format is x, y, theta
-    '''
-    '''
-    row_averages = []
-    cell_size = 0.3 # resolution
-
-    map_width = 15
-    map_height = 15
-
-    max_x = map_width / 2.0
-    max_y = map_height / 2.0
-    r_ind = 0
-    c_ind = 0
-
-    occ_grid_width = (int) (map_width / cell_size)
-    occ_grid_height = (int) (map_height / cell_size)
-
-    print occ_grid_width, occ_grid_height
-
-    # make sure the grid is big enough so we don't have an index error
-    grid = [0 for num in range(0, occ_grid_width * occ_grid_height)]
-
-    # fill in the occupancy grid
-    for particle in particles:
-        if particle.w == -1:
-            continue
-        else:
-            adj_x = map_width - (particle.x + max_x)
-            adj_y = map_height - (particle.y + max_y)
-
-            r_ind = occ_grid_height - (adj_y // cell_size);
-            c_ind = occ_grid_width - (adj_x // cell_size);
-
-            try:
-                grid[(int)(r_ind * occ_grid_width + c_ind)] += 1
-            except:
-                print r_ind * occ_grid_width + c_ind
-
-    print max(grid)
-    '''
     k_means = KMeans(n_clusters=4)
     coord_array = []
     guess = [0, 0, 0]
@@ -367,7 +306,6 @@ def get_pose_estimate():
         labels, counts = np.unique(cluster_labels[cluster_labels>=0], return_counts=True)
         #guess = k_means.cluster_centers_[labels[np.argsort(-counts)[:3]][0]]
         guess = numpy_array[point_closest[labels[np.argsort(-counts)[:3]][0]]]
-        
 
     return guess[0], guess[1], guess[2]
 
