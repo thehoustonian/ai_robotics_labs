@@ -31,7 +31,7 @@ def distance(a,b):
 
 def nextWaypoint(waypoint):
     #Figure out which waypoint in the path should be the next one.  Set it in waypoint.x and waypoint.y and return
-    
+
     global robot        # This gives us the location of the robot: Format = [x,y,theta]
     global discrete_map # This is the discrete map to use for some things
     global path         # This is the path we want to follow:  Format = [(x0,y0),(x1,y1),(x2,y2), ..., (xT,yT)]
@@ -41,16 +41,31 @@ def nextWaypoint(waypoint):
 
     # Determine which point in path should be the robot's next waypoint
     # Set waypoint.x and waypoint.y to the waypoint (in map coordinates)
-    
+
     # You can use distance(point_a, point_b) (see above) to compute distances between points
-    # and discrete_map.clear_path(point_a,point_b) 
-    # which will return true if there are no obstacles 
-    # between point_a and point_b on the map, and will 
+    # and discrete_map.clear_path(point_a,point_b)
+    # which will return true if there are no obstacles
+    # between point_a and point_b on the map, and will
     # return false if there is an obstacle between them
+    '''
+    dist_thresh = 1.0
+    max_index = len(path) - 1
+
+    if distance(robot, path[path_index]) < dist_thresh:
+        path_index = path_index + 1 if path_index < max_index else max_index
+
+    if path_index <= max_index:
+        waypoint.x, waypoint.y = path[path_index]
 
     #LAB 5 PART C CODE END
-
+    print path_index
     #Return the waypoint
+    return waypoint
+    '''
+
+    for p in path:
+        if discrete_map.clear_path(p, (robot[0], robot[1])):
+            waypoint.x, waypoint.y = p
     return waypoint
 
 if __name__ == '__main__':
@@ -91,6 +106,3 @@ if __name__ == '__main__':
         if waypoint is not None:
             pub.publish(waypoint)
         rate.sleep()
-
-    
-        

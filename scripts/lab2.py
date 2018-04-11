@@ -342,7 +342,7 @@ def potential():
         #2. Compute obstacle avoidance force
         o_force = obstacle_force()
 
-        print "g_force: ", g_force, " o_force: ", o_force
+        # print "g_force: ", g_force, " o_force: ", o_force
         #3. Get total force by adding together
         total_force = add_forces(g_force, o_force)
 
