@@ -368,7 +368,7 @@ if __name__ == '__main__':
     #Initialize particles
     #We will start with 500 particles, but you can experiment with different numbers of particles
     #The more the merrier, but your computer has to be able to handle it
-    initialize_particles(900)
+    initialize_particles(800)
 
     #Set iteration counter
     iteration = 1
