@@ -138,7 +138,7 @@ def advance_particles():
     #       4: Influence of |linear velocity| on final angle noise
     #       5: Influence of |angular velocity| on final angle noise
     #       6: Delta T to be used
-    vp = [0.11,0.11,0.2,0.15,0.1,0.1,delta_t]
+    vp = [0.14,0.11,0.2,0.18,0.1,0.1,delta_t]
 
     #Advance each particle
     for i in range(len(particles)):
@@ -223,7 +223,7 @@ def resample_particles():
 
     new_particles = []
     total_weight = 0
-    random_particle_count = (int)(0.19 * len(particles)) # percentage randomness of total particle count
+    random_particle_count = (int)(0.50 * len(particles)) # percentage randomness of total particle count
     if(random_particle_count > len(particles)):
         print "Too many random particles!! Reducing to 1/2 total particle count"
         random_particle_count = len(particles) // 2
@@ -289,7 +289,7 @@ def get_pose_estimate():
     #   weight.  Random particles have weight -1.0, while resampled particles have weight 0.0
     #   You probably shouldn't use the random particles to influence your pose estimate
 
-    k_means = KMeans(n_clusters=4)
+    k_means = MiniBatchKMeans(n_clusters=5)
     coord_array = []
     guess = [0, 0, 0]
     for particle in particles:
