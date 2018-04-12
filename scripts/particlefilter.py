@@ -12,6 +12,8 @@ from tf.transformations import euler_from_quaternion
 import math
 import random
 import copy
+import csv
+import os
 from labutils import *
 from sensormodel import *
 from motionmodel import *
@@ -289,6 +291,13 @@ def get_pose_estimate():
     #   weight.  Random particles have weight -1.0, while resampled particles have weight 0.0
     #   You probably shouldn't use the random particles to influence your pose estimate
 
+    # for average particle estimation
+    x_avg = 0
+    y_avg = 0
+    theta_avg = 0
+    count = 0
+
+    # K-MEANS EUCLIDEAN CLUSTERING POSE ESTIMATION
     k_means = MiniBatchKMeans(n_clusters=5)
     coord_array = []
     guess = [0, 0, 0]
@@ -296,6 +305,10 @@ def get_pose_estimate():
         if particle.w == -1:
             continue
         else:
+            x_avg += particle.x
+            y_avg += particle.y
+            theta_avg += particle.theta
+            count += 1
             coord_array.append([particle.x, particle.y, particle.theta])
 
     if len(coord_array) != 0:
@@ -305,9 +318,32 @@ def get_pose_estimate():
         cluster_labels = k_means.labels_
         labels, counts = np.unique(cluster_labels[cluster_labels>=0], return_counts=True)
         #guess = k_means.cluster_centers_[labels[np.argsort(-counts)[:3]][0]]
-        guess = numpy_array[point_closest[labels[np.argsort(-counts)[:3]][0]]]
+        kmeans_guess = numpy_array[point_closest[labels[np.argsort(-counts)[:3]][0]]]
+    else:
+        kmeans_guess = [0, 0, 0]
 
-    return guess[0], guess[1], guess[2]
+    # AVERAGE PARTICLE POSE ESTIMATION
+
+    if count != 0:
+        x_avg /= count
+        y_avg /= count
+        theta_avg /= count * 3.14
+
+    average_guess = [x_avg, y_avg, theta_avg]
+
+    # RANDOM VALID PARTICLE guess
+    if len(coord_array) > 0 :
+        i = random.randrange(0, len(coord_array))
+        rand_guess = coord_array[i]
+    else:
+        rand_guess = [0, 0, 0]
+
+    # calculate accuracy and write to csv file
+    global robot
+    true_pose = robot
+    write_string = str(robot[0]) + ',' + str(robot[1]) + ',' + str(kmeans_guess[0]) + ',' + str(kmeans_guess[1]) + ',' + str(average_guess[0]) + ',' + str(average_guess[1]) + ',' + str(rand_guess[0]) + ',' + str(rand_guess[1]) + '\n'
+    csv_output_file.write(write_string)
+    return kmeans_guess
 
 
 #Update all the particles, done once per iteration
@@ -348,6 +384,11 @@ if __name__ == '__main__':
     global discrete_map
     global robot
     global laser_data
+    global csv_output_file
+
+    csv_output_file = open(os.path.join(os.path.expanduser('~/Documents'), "pose_estimates.csv"), "w")
+
+    csv_output_file.write("true_x, true_y, euc_clustering_x, euc_clustering_y, averages_x, averages_y, random_x, random_y\n")
 
     #Process arguments and world file name
     args = rospy.myargv(argv=sys.argv)
@@ -376,7 +417,7 @@ if __name__ == '__main__':
     #This controls how frequently we save images of the particles to the world folder
     #Change this to influence how many images get saved out
     #1 is useful for debugging, but saves a lot of images
-    display_rate = 4
+    display_rate = 10
 
     #Display initial distribution of particles, if we have any
     if len(particles) > 0:
