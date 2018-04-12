@@ -138,7 +138,7 @@ def advance_particles():
     #       4: Influence of |linear velocity| on final angle noise
     #       5: Influence of |angular velocity| on final angle noise
     #       6: Delta T to be used
-    vp = [0.14,0.11,0.2,0.18,0.1,0.1,delta_t]
+    vp = [0.24,0.11,0.2,0.23,0.1,0.1,delta_t]
 
     #Advance each particle
     for i in range(len(particles)):
@@ -199,7 +199,7 @@ def get_scan_prob(p):
     # where expected distance is the distance to the expected obstacle, measured_distance is the distance that the laser measured
     # (stored in laser_data.ranges[]), and maximum_range is the maximum range reading of the laser scanner (stored in laser_data.range_max)
     # and std is the standard deviation to use for the reading noise
-    sensor_model_std = 2.25 #You can modify this if it helps and use it when you call the sensor_model
+    sensor_model_std = 2.0 #You can modify this if it helps and use it when you call the sensor_model
     probability = 1.0
     #This variable will have the angle from the robot that the current scan is pointing
     #TIP: To get global angle to pass to LUT from this, do wrap_angle(current_angle + p.theta), where p.theta is the heading of the current particle
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     #This controls how frequently we save images of the particles to the world folder
     #Change this to influence how many images get saved out
     #1 is useful for debugging, but saves a lot of images
-    display_rate = 2
+    display_rate = 4
 
     #Display initial distribution of particles, if we have any
     if len(particles) > 0:
