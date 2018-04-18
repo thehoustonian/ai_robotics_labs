@@ -21,8 +21,8 @@ class SearchNode:
         self.parent = parent # Pointer to parent node (will be None for root node)
         self.state = state # The state (grid cell) this node points to
         self.cost = cost # The cumulative cost of this search node (sum of all actions to get here)
-        
-# This function returns the euclidean distance between two grid cells 
+
+# This function returns the euclidean distance between two grid cells
 def euclidean_distance_grid(a,b):
     d = math.hypot(b[0]-a[0],b[1]-a[1])
     return d
@@ -44,12 +44,12 @@ def run_a_star(start,goal):
     fringe.put((priority, start_node)) # Add it to the fringe
 
     print 'Starting A* search from grid cell ', start_node.state, ' to goal cell ', goal
-    print 'Starting f-value is ', start_node.h + start_node.cost
+    print 'Starting f-value is ', start_node_h + start_node.cost
 
     #Run the A* search
     goal_node = a_star(fringe,goal)
 
-    #Extract path from the goal_node and return it    
+    #Extract path from the goal_node and return it
     path = []
 
     if goal_node is not None:
@@ -61,29 +61,29 @@ def run_a_star(start,goal):
         path.reverse()
 
     return path
-    
+
 # This is the main A* function.  It performs the search
 def a_star(fringe,goal):
     closed = [] # This keeps track of which grid cells we have already visited
     expansions = 0 # This keeps track of the number of expansions
-    
+
     # Stay in loop as long as we have unexpanded nodes
     while not fringe.empty():
-    
+
         # Get the node out of the fringe.  Format of items in the fringe is (priority, searchNode)
         expand_node = fringe.get()[1]  # This gets the node to expand
- 
+
         # Make sure that we didn't already expand a node pointing to this state
         if expand_node.state not in closed:
             expansions = expansions + 1 # Increment our expansions counter
- 
+
             #Test for the goal
             if expand_node.state == goal:
                 # We found it!  Return the goal node.
                 #  It stores the entire path through the parent pointers
                 print 'Found the goal after ', expansions, ' node expansions'
                 return expand_node
-        
+
             # Add expanded node's id to the closed list
             closed.append(expand_node.state)
 
@@ -96,13 +96,18 @@ def a_star(fringe,goal):
                 # Lab 5 Part B Code START
                 #########################
                 #Remove next line once you have code in the loop.  This is just so that python will run file as is
-                print 'Exploring neighbor', g
-                
+                #print 'Exploring neighbor', g
+
                 # 1. Compute the cost to get there from current node (use euclidean_distance_grid())
+                cost = euclidean_distance_grid(expand_node.state, g)
                 # 2. Create a new search node for it (constructor => SearchNode( grid_cell, parent SearchNode, cumulative cost)
+                new_node = SearchNode(g, expand_node, cost + expand_node.cost)
                 # 3. Compute the new node's heuristic value (use euclidean_distance_grid())
+                h_val =  euclidean_distance_grid(new_node.state, goal)
                 # 4. Compute the new node's priority (as per A* f-value calculation)
+                priority = new_node.cost + h_val
                 # 5. Add it to the fringe, with proper priority (use fringe.put((priority, new SearchNode))
+                fringe.put((priority, new_node))
                 #########################
                 # Lab 5 Part B Code END
                 #########################
@@ -123,21 +128,35 @@ def get_neighbors(g, closed):
     #########################
     # Lab 5 Part A Code START
     #########################
-    
+
     # Determine all of the neighbors/successors of grid cell g = (x,y)
-    # Each should be a tuple of x and y grid coordinates 
+    # Each should be a tuple of x and y grid coordinates
     # Append each valid neighbor to g
     # To be valid, neighbor must:
     #  1. Not already be in closed (list of already explored states)
     #  2. Be on the map (check dmap.grid_width and dmap.grid_height)
     #  3. Not be occupied by an obstacle (dmap.occupied is the list of occupied cells)
 
+    potential_neighbors = [(a,b) for a in range(g[0] - 1, g[0] + 2) for b in range(g[1] - 1, g[1] + 2)]
+
+    for potential_neighbor in potential_neighbors:
+        if potential_neighbor == g:  # don't wanna add g to the list of g's neighbors
+            continue
+        elif potential_neighbor in closed: # nor do we wanna add a neighbor that's already been checked
+            continue
+        elif potential_neighbor in dmap.occupied: # don't add one on an obstacle
+            continue
+        elif (potential_neighbor[0] < 0) or (potential_neighbor[0] > dmap.grid_width) or (potential_neighbor[1] < 0) or (potential_neighbor[1] > dmap.grid_height): # or one that's off the map
+            continue
+        else:
+            neighbors.append(potential_neighbor)
+
     #########################
     # Lab 5 Part A Code END
     #########################
 
     # Return the list of neighbors
-    return neighbors  
+    return neighbors
 
 if __name__ == '__main__':
     global dmap # The discrete map
@@ -159,7 +178,7 @@ if __name__ == '__main__':
 
     #Uncomment to print out the path (in map coordinates)
     #print 'MAP PATH = [',
-    
+
     solution_quality = 0.0
     map_path = []
     for p in path:
@@ -186,4 +205,3 @@ if __name__ == '__main__':
     pickle.dump(map_path,path_file)
     path_file.close()
     print 'Saved path to file: ', path_file_name
-
