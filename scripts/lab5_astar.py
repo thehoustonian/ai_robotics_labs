@@ -97,17 +97,32 @@ def a_star(fringe,goal):
                 #########################
                 #Remove next line once you have code in the loop.  This is just so that python will run file as is
                 #print 'Exploring neighbor', g
+                search_mode = 2  # A* = 0, UCS = 1, Greedy Best-first = 2
+                if search_mode == 0:  # A* (lowest cost + h_val)
+                    # 1. Compute the cost to get there from current node (use euclidean_distance_grid())
+                    cost = euclidean_distance_grid(expand_node.state, g)
+                    # 2. Create a new search node for it (constructor => SearchNode( grid_cell, parent SearchNode, cumulative cost)
+                    new_node = SearchNode(g, expand_node, cost + expand_node.cost)
+                    # 3. Compute the new node's heuristic value (use euclidean_distance_grid())
+                    h_val =  euclidean_distance_grid(new_node.state, goal)
+                    # 4. Compute the new node's priority (as per A* f-value calculation)
+                    priority = new_node.cost + h_val
+                    # 5. Add it to the fringe, with proper priority (use fringe.put((priority, new SearchNode))
+                    fringe.put((priority, new_node))
 
-                # 1. Compute the cost to get there from current node (use euclidean_distance_grid())
-                cost = euclidean_distance_grid(expand_node.state, g)
-                # 2. Create a new search node for it (constructor => SearchNode( grid_cell, parent SearchNode, cumulative cost)
-                new_node = SearchNode(g, expand_node, cost + expand_node.cost)
-                # 3. Compute the new node's heuristic value (use euclidean_distance_grid())
-                h_val =  euclidean_distance_grid(new_node.state, goal)
-                # 4. Compute the new node's priority (as per A* f-value calculation)
-                priority = new_node.cost + h_val
-                # 5. Add it to the fringe, with proper priority (use fringe.put((priority, new SearchNode))
-                fringe.put((priority, new_node))
+                elif search_mode == 1:  # UCS (lowest cost to node)
+                    cost = euclidean_distance_grid(expand_node.state, g)
+                    new_node = SearchNode(g, expand_node, cost + expand_node.cost)
+                    fringe.put((new_node.cost, new_node))  # for UCS, priority is cost to node
+
+                elif search_mode == 2:  # Greedy best-first (lowest h-value)
+                    cost = euclidean_distance_grid(expand_node.state, g)
+                    new_node = SearchNode(g, expand_node, cost + expand_node.cost)
+                    h_val = euclidean_distance_grid(new_node.state, goal)
+                    fringe.put((h_val, new_node))
+
+                else:
+                    print "Invalid search mode selected!"
                 #########################
                 # Lab 5 Part B Code END
                 #########################

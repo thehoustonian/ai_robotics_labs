@@ -6,6 +6,7 @@ window
 (
   size [ 600.000 600.000 ]
   scale 35.00
+  show_trailrise 1
 )
 
 define block model

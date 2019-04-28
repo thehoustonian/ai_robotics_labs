@@ -3,9 +3,10 @@ interval_sim 100 # simulation timestep in milliseconds
 #interval_real 100
 
 window
-( 
-  size [ 600.000 600.000 ] 
-  scale 35.00 
+(
+  size [ 600.000 600.000 ]
+  scale 35.00
+  show_trailrise 1
 )
 
 define block model
@@ -59,7 +60,7 @@ define turtlebot position
   drive "diff"
   hokuyo(pose [ 0.0 0.000 0 0.000 ])
   bitmap "robot.png"
-  
+
 )
 
 turtlebot( pose [-6 6 0 180] color "red")
